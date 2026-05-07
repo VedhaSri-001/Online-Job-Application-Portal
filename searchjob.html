@@ -1,0 +1,158 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Search Jobs</title>
+
+<link rel="stylesheet" href="style.css">
+
+<link rel="stylesheet"
+href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+
+<link rel="stylesheet"
+href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css">
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>SEARCH ALL THE JOBS</h2>
+
+<table class="table table-bordered">
+
+<thead>
+<tr>
+<th>Title</th>
+<th>Description</th>
+<th>Location</th>
+<th>Status</th>
+<th>Action</th>
+</tr>
+</thead>
+
+<tbody id="jobTable">
+
+</tbody>
+
+</table>
+
+<button class="btn btn-default" onclick="goHome()">Back</button>
+
+</div>
+
+</body>
+
+
+<script>
+
+window.onload = function(){
+loadJobs();
+};
+
+function loadJobs(){
+
+fetch("/getJobs",{
+method:'POST'
+})
+.then(res => res.json())
+.then(data => {
+
+let table = document.getElementById("jobTable");
+table.innerHTML = "";
+
+data.forEach(job => {
+
+let disabled = job.status !== "Not Applied" ? "disabled" : "";
+
+table.innerHTML += `
+<tr>
+<td>${job.jobtitle}</td>
+<td>${job.jobdescription}</td>
+<td>${job.location}</td>
+<td>${job.status}</td>
+<td>
+
+<input type="file"
+id="resume-${job._id}"
+accept=".pdf,.doc,.docx,.txt"
+onchange="enableApplyButton('${job._id}')">
+
+<br><br>
+
+<button
+class="btn btn-primary"
+onclick="applyJob('${job._id}')"
+id="applyBtn-${job._id}"
+${disabled}
+disabled>
+Apply
+</button>
+
+</td>
+</tr>
+`;
+
+});
+
+});
+
+}
+
+
+function applyJob(jobId){
+
+const fileInput = document.getElementById(`resume-${jobId}`);
+
+if(!fileInput.files.length){
+alert("Please select a resume");
+return;
+}
+
+if(!confirm("Apply for this job?")) return;
+
+const formData = new FormData();
+
+formData.append('jobId', jobId);
+formData.append('resume', fileInput.files[0]);
+
+fetch('/apply', {
+method: 'POST',
+body: formData
+})
+.then(res => res.json())
+.then(response => {
+
+if(response.success){
+alert("Applied successfully!");
+loadJobs();
+}
+else{
+alert(response.message || "Application failed");
+}
+
+});
+
+}
+
+
+function enableApplyButton(jobId){
+
+const fileInput = document.getElementById(`resume-${jobId}`);
+const applyBtn = document.getElementById(`applyBtn-${jobId}`);
+
+applyBtn.disabled = !fileInput.files.length;
+
+}
+
+function goHome(){
+window.location.href = "home.html";
+}
+
+</script>
+
+</html>

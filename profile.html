@@ -1,0 +1,92 @@
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page Title</title>
+
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet"
+          href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+          integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u"
+          crossorigin="anonymous">
+    <link rel="stylesheet"
+          href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css"
+          integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp"
+          crossorigin="anonymous">
+</head>
+ <h2>Profile</h2>
+<button onclick="goHome()">Home</button>
+
+<div>
+    First Name: <input type="text" id="firstname"/> 
+</div> <br />
+
+<div> Last Name: <input type="text" id="lastname"/> </div><br />
+<div> User Name: <input type="text" id="username"/> </div><br />
+<div> Password: <input type="password" id="password"/> </div><br />
+<div> Email: <input type="text" id="email"/> </div> <br />
+<div> Location: <input type="text" id="location"/> </div> <br />
+<div> Phone: <input type="text" id="phone"/> </div> <br />
+<div>
+    Gender: 
+    <input type="radio" name="gender" value="male" id="male"> Male
+    <input type="radio" name="gender" value="female" id="female"> Female
+</div>
+<br />
+<button onclick="updateProfile()">Update</button>
+<div id="updateMsg" style="display:none; color:green;">Profile updated successfully</div>
+
+<script>
+
+// Go back to home
+function goHome(){
+    window.location.href = "home.html";
+}
+
+// Load current profile (optional: fetch from server)
+window.onload = function(){
+    fetch('/getProfile', { method:'POST' })
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById('firstname').value = data.firstname || "";
+        document.getElementById('lastname').value = data.lastname || "";
+        document.getElementById('username').value = data.username || "";
+        document.getElementById('password').value = data.password || "";
+        document.getElementById('email').value = data.email || "";
+        document.getElementById('location').value = data.location || "";
+        document.getElementById('phone').value = data.phone || "";
+        if(data.gender === "male") document.getElementById('male').checked = true;
+        if(data.gender === "female") document.getElementById('female').checked = true;
+    });
+}
+
+function updateProfile(){
+
+    const firstname = document.getElementById('firstname').value;
+    const lastname = document.getElementById('lastname').value;
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    const email = document.getElementById('email').value;
+    const location = document.getElementById('location').value;
+    const phone = document.getElementById('phone').value;
+
+    const genderEl = document.querySelector('input[name="gender"]:checked');
+    const gender = genderEl ? genderEl.value : "";
+
+    const obj = {
+        firstname, lastname, username, password, email, location, phone, gender
+    };
+
+    fetch('/updateProfile',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(obj)
+    })
+    .then(res => res.json())
+    .then(() => {
+        document.getElementById('updateMsg').style.display = "block";
+    });
+
+}
+
+</script>

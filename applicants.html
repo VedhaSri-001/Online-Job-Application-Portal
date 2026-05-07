@@ -1,0 +1,175 @@
+
+<!DOCTYPE html>
+
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Applicants</title>
+
+<link rel="stylesheet" href="style.css">
+
+<link rel="stylesheet"
+href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+
+<link rel="stylesheet"
+href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css">
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>Applicants</h2>
+
+<table class="table table-bordered">
+
+<thead>
+<tr>
+<th>Applicant</th>
+<th>Resume</th>
+<th>Status</th>
+<th>Action</th>
+</tr>
+</thead>
+
+<tbody id="applicantsTable">
+</tbody>
+
+</table>
+
+<button onclick="goBack()" class="btn btn-default">Back</button>
+
+</div>
+
+<script>
+
+// get jobId from URL
+const urlParams = new URLSearchParams(window.location.search);
+const jobId = urlParams.get('jobId');
+
+window.onload = function(){
+loadApplicants();
+};
+
+function loadApplicants(){
+
+fetch('/getApplicants',{
+method:'POST',
+headers:{
+'Content-Type':'application/json'
+},
+body: JSON.stringify({ jobId: jobId })
+})
+.then(res => res.json())
+.then(data => {
+
+const table = document.getElementById("applicantsTable");
+table.innerHTML = "";
+
+data.forEach(a => {
+
+let actionButtons = "";
+
+if(a.status === "applied"){
+
+actionButtons = `
+<button style="background-color:green;color:white;border:none;"
+onclick="acceptApplicant('${a.username}')">
+Accept
+</button>
+
+<button style="background-color:red;color:white;border:none;"
+onclick="rejectApplicant('${a.username}')">
+Reject
+</button>
+`;
+
+}
+
+else if(a.status === "accepted"){
+actionButtons = "✔ Accepted";
+}
+
+else if(a.status === "rejected"){
+actionButtons = "❌ Rejected";
+}
+
+table.innerHTML += `
+<tr>
+<td>${a.username}</td>
+
+<td>
+<a href="/uploads/${a.resume}" target="_blank">
+View Resume
+</a>
+</td>
+
+<td>${a.status}</td>
+
+<td>
+${actionButtons}
+</td>
+
+</tr>
+`;
+
+});
+
+});
+
+}
+
+function acceptApplicant(username){
+
+fetch('/acceptApplicant',{
+method:'POST',
+headers:{
+'Content-Type':'application/json'
+},
+body: JSON.stringify({
+jobId: jobId,
+username: username
+})
+})
+.then(res => res.json())
+.then(() => {
+
+alert("Applicant accepted");
+loadApplicants();
+
+});
+
+}
+
+function rejectApplicant(username){
+
+fetch('/rejectApplicant',{
+method:'POST',
+headers:{
+'Content-Type':'application/json'
+},
+body: JSON.stringify({
+jobId: jobId,
+username: username
+})
+})
+.then(res => res.json())
+.then(() => {
+
+alert("Applicant rejected");
+loadApplicants();
+
+});
+
+}
+
+function goBack(){
+window.location.href = "yourposts.html";
+}
+
+</script>
+
+</body>
+</html>

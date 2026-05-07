@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Register</title>
+
+<link rel="stylesheet" href="style.css">
+
+<link rel="stylesheet"
+href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+
+<link rel="stylesheet"
+href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css">
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>Register</h2>
+
+<div class="row">
+
+<form class="col-md-4" onsubmit="registerUser(event)">
+
+<div class="form-group">
+<label>User Name:</label>
+<input id="username" class="form-control" required>
+</div>
+
+<div class="form-group">
+<label>Password:</label>
+<input id="password" type="password" class="form-control" required>
+</div>
+
+<div class="form-group">
+<label>Email:</label>
+<input id="email" type="email" class="form-control" required>
+</div>
+
+<div class="form-group">
+<label>Location:</label>
+<input id="location" type="text" class="form-control" required>
+</div>
+
+<div class="form-group">
+<label>Phone:</label>
+<input id="phone" type="number" class="form-control" required>
+</div>
+
+<div>
+<label>User Type:</label> <br>
+
+<label class="radio-inline">
+<input type="radio" name="usertype" value="company"> Company
+</label>
+
+<label class="radio-inline">
+<input type="radio" name="usertype" value="job-seeker"> Job Seeker
+</label>
+
+</div>
+
+<br>
+
+<button type="submit" class="btn btn-primary">
+Submit
+</button>
+
+<br><br>
+
+<button type="button"
+class="btn btn-default"
+onclick="goLogin()">
+Back to Login
+</button>
+
+</form>
+
+</div>
+
+</div>
+
+</body>
+
+<script>
+
+function registerUser(event){
+
+event.preventDefault();
+
+let username = document.getElementById("username").value.trim();
+let password = document.getElementById("password").value.trim();
+let email = document.getElementById("email").value.trim();
+let location = document.getElementById("location").value.trim();
+let phone = document.getElementById("phone").value.trim();
+
+let usertype = document.querySelector('input[name="usertype"]:checked');
+
+if(!usertype){
+alert("Please select user type");
+return;
+}
+
+let obj = {
+username: username,
+password: password,
+email: email,
+location: location,
+phone: phone,
+usertype: usertype.value
+};
+
+fetch('/postData',{
+method:'POST',
+headers:{
+'Content-Type':'application/json'
+},
+body: JSON.stringify(obj)
+})
+.then(res => res.json())
+.then(response => {
+
+if(response.A === "no"){
+alert("User already exists. Change username or email.");
+}
+else{
+alert("Registration successful! Please login.");
+window.location.href = "login.html";
+}
+
+})
+.catch(()=>{
+alert("Server error");
+});
+
+}
+
+function goLogin(){
+window.location.href = "login.html";
+}
+
+</script>
+
+</html>

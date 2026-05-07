@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "body-parser": "^2.2.2",
+    "cookie-parser": "^1.4.7",
+    "express": "^5.2.1",
+    "express-session": "^1.19.0",
+    "mongoose": "^9.2.4",
+    "multer": "^2.1.1"
+  }
+}

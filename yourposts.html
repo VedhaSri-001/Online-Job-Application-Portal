@@ -1,0 +1,121 @@
+
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page Title</title>
+
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet"
+          href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css"
+          integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u"
+          crossorigin="anonymous">
+    <link rel="stylesheet"
+          href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css"
+          integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp"
+          crossorigin="anonymous">
+</head>
+<table class="table table-bordered">
+
+<thead>
+<tr>
+<th>Job Title</th>
+<th>Description</th>
+<th>Location</th>
+<th>Applicants</th>
+<th>Delete</th>
+</tr>
+</thead>
+
+<tbody id="myJobsTable">
+</tbody>
+
+</table>
+
+<script>
+
+window.onload = function(){
+    loadMyJobs();
+};
+
+function loadMyJobs(){
+
+// get recruiter username from session check
+fetch('/checkUserType',{
+    method:'POST'
+})
+.then(res => res.json())
+.then(user => {
+
+fetch("/getMyJobs",{
+    method:'POST',
+    headers:{
+        'Content-Type':'application/json'
+    },
+    body: JSON.stringify({
+        username: user.username
+    })
+})
+.then(res => res.json())
+.then(data => {
+
+let table = document.getElementById("myJobsTable");
+table.innerHTML = "";
+
+data.forEach(job => {
+
+table.innerHTML += `
+<tr>
+<td>${job.jobtitle}</td>
+<td>${job.jobdescription}</td>
+<td>${job.location}</td>
+
+<td>
+<button style="color:white;background-color:black;border:none;"
+onclick="viewApplicants('${job._id}')">
+View Applicants
+</button>
+</td>
+
+<td>
+<button style="border:none;color:white;background-color:black;"
+onclick="deletePost('${job._id}')">
+Delete Post
+</button>
+</td>
+
+</tr>
+`;
+
+});
+
+});
+
+});
+
+}
+
+function viewApplicants(jobId){
+    window.location.href = "applicants.html?jobId=" + jobId;
+}
+
+function deletePost(jobId){
+
+if(!confirm("Delete this job post?")) return;
+
+fetch('/deleteJob',{
+    method:'POST',
+    headers:{
+        'Content-Type':'application/json'
+    },
+    body: JSON.stringify({ jobId: jobId })
+})
+.then(res => res.json())
+.then(() => {
+    alert("Job deleted");
+    loadMyJobs();   // reload table
+});
+
+}
+
+</script>
