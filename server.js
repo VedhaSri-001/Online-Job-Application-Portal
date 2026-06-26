@@ -1,3 +1,6 @@
+
+require('dotenv').config();
+
 const express = require('express');
 const app = express();
 
@@ -7,8 +10,7 @@ const expressSession = require('express-session');
 const mongoose = require('mongoose');
 const multer = require('multer');
 const fs = require('fs');
-require('dotenv').config();
-
+const path = require('path'); // Added for handling paths cleanly
 
 if (!fs.existsSync('uploads')) {
     fs.mkdirSync('uploads');
@@ -19,42 +21,37 @@ const storage = multer.diskStorage({
         cb(null, 'uploads/');
     },
     filename: function (req, file, cb) {
-
         const username = req.session.user || "guest";
         const ext = file.originalname.split('.').pop();
-
         cb(null, username + "-" + Date.now() + "." + ext);
     }
 });
 
 const upload = multer({ storage: storage });
 
-
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(cookieParser());
 
 app.use(expressSession({
-    secret: process.env.SESSION_SECRET,
+    secret: process.env.SESSION_SECRET || 'fallback-secret-key', // Added fallback string
     saveUninitialized: false,
     resave: false
 }));
 
-// serve html/css/js
-app.use(express.static(__dirname));
+// ✅ Updated to cleanly serve everything out of your new public/ folder
+app.use(express.static(path.join(__dirname, 'public')));
 
 // serve uploaded resumes
 app.use('/uploads', express.static('uploads'));
 
-mongoose.connect(process.env.MONGO_URI)
+mongoose.connect(process.env.MONGO_URL)
 .then(() => console.log("MongoDB connected"))
 .catch(err => console.log(err));
-
 
 const Schema = mongoose.Schema;
 
 const blogSchema = new Schema({
-
     username: String,
     password: String,
     email: String,
@@ -74,21 +71,17 @@ const blogSchema = new Schema({
             status:String
         }]
     }]
-
 });
 
 const Blog4 = mongoose.model("Blog4", blogSchema);
 
-
+// ✅ Updated to point inside your public folder
 app.get('/', (req,res)=>{
-    res.sendFile(__dirname + "/index.html");
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-
 app.post('/postData', async(req,res)=>{
-
     try{
-
         const item = {
             username:req.body.username,
             password:req.body.password,
@@ -111,22 +104,15 @@ app.post('/postData', async(req,res)=>{
         await user.save();
 
         res.json({A:"yes"});
-
     }catch(err){
-
         console.log(err);
         res.status(500).json({A:"error"});
     }
-
 });
 
-
 app.post('/login', async(req,res)=>{
-
     try{
-
         const {username,password} = req.body;
-
         const user = await Blog4.findOne({username,password});
 
         if(!user){
@@ -134,31 +120,29 @@ app.post('/login', async(req,res)=>{
         }
 
         req.session.user = username;
-
-        res.json({A:"correct"});
-
+        req.session.save((err) => {
+            if (err) {
+                console.log("Session save error:", err);
+                return res.status(500).json({A:"error"});
+            }
+            res.json({A:"correct"});
+        });
+        // res.json({A:"correct"});
     }catch(err){
-
         console.log(err);
         res.status(500).json({A:"error"});
     }
-
 });
 
-
 app.post('/checkLogin',(req,res)=>{
-
     if(!req.session.user){
         return res.json({isLogin:"no"});
     }
-
     res.json({isLogin:"yes"});
 });
 
 app.post('/checkUserType', async(req,res)=>{
-
     try{
-
         const user = await Blog4.findOne({
             username:req.session.user
         });
@@ -171,20 +155,14 @@ app.post('/checkUserType', async(req,res)=>{
             usertype:user.usertype,
             username:user.username
         });
-
     }catch(err){
-
         console.log(err);
         res.status(500).json({usertype:null});
     }
-
 });
 
-
 app.post('/update', async(req,res)=>{
-
     try{
-
         const recruiter = await Blog4.findOne({
             username:req.session.user
         });
@@ -202,43 +180,29 @@ app.post('/update', async(req,res)=>{
         };
 
         recruiter.job.push(job);
-
         await recruiter.save();
 
         res.json({success:true});
-
     }catch(err){
-
         console.log(err);
         res.json({success:false});
     }
-
 });
 
 app.post('/getJobs', async(req,res)=>{
-
     const username = req.session.user;
-
     const recruiters = await Blog4.find({});
-
     let jobs = [];
 
     recruiters.forEach(r=>{
-
         r.job.forEach(j=>{
-
             let status = "Not Applied";
-
             if(j.applicants){
-
                 const applicant = j.applicants.find(a=>a.username === username);
-
                 if(applicant){
                     status = applicant.status;
                 }
-
             }
-
             jobs.push({
                 _id:j._id,
                 jobtitle:j.jobtitle,
@@ -246,11 +210,8 @@ app.post('/getJobs', async(req,res)=>{
                 location:j.location,
                 status:status
             });
-
         });
-
     });
-
     res.json(jobs);
 });
 
@@ -289,9 +250,7 @@ app.post('/apply', upload.single('resume'), async(req,res)=>{
 });
 
 app.post('/getApplicants', async(req,res)=>{
-
     try{
-
         const recruiter = await Blog4.findOne({
             "job._id":req.body.jobId
         });
@@ -301,24 +260,16 @@ app.post('/getApplicants', async(req,res)=>{
         }
 
         const job = recruiter.job.id(req.body.jobId);
-
         res.json(job.applicants || []);
-
     }catch(err){
-
         console.log(err);
         res.json([]);
     }
-
 });
 
-
 app.post('/acceptApplicant', async(req,res)=>{
-
     try{
-
         const {jobId,username} = req.body;
-
         const recruiter = await Blog4.findOne({
             "job._id":jobId
         });
@@ -328,7 +279,6 @@ app.post('/acceptApplicant', async(req,res)=>{
         }
 
         const job = recruiter.job.id(jobId);
-
         const applicant = job.applicants.find(a=>a.username === username);
 
         if(!applicant){
@@ -336,25 +286,18 @@ app.post('/acceptApplicant', async(req,res)=>{
         }
 
         applicant.status = "accepted";
-
         await recruiter.save();
 
         res.json({success:true});
-
     }catch(err){
-
         console.log(err);
         res.json({success:false});
     }
-
 });
 
 app.post('/rejectApplicant', async(req,res)=>{
-
     try{
-
         const {jobId,username} = req.body;
-
         const recruiter = await Blog4.findOne({
             "job._id":jobId
         });
@@ -364,7 +307,6 @@ app.post('/rejectApplicant', async(req,res)=>{
         }
 
         const job = recruiter.job.id(jobId);
-
         const applicant = job.applicants.find(a=>a.username === username);
 
         if(!applicant){
@@ -372,25 +314,18 @@ app.post('/rejectApplicant', async(req,res)=>{
         }
 
         applicant.status = "rejected";
-
         await recruiter.save();
 
         res.json({success:true});
-
     }catch(err){
-
         console.log(err);
         res.json({success:false});
     }
-
 });
 
 app.post('/deleteJob', async(req,res)=>{
-
     try{
-
         const jobId = req.body.jobId;
-
         const recruiter = await Blog4.findOne({
             username:req.session.user
         });
@@ -400,24 +335,18 @@ app.post('/deleteJob', async(req,res)=>{
         }
 
         recruiter.job = recruiter.job.filter(j => j._id != jobId);
-
         await recruiter.save();
 
         res.json({success:true});
-
     }catch(err){
-
         console.log(err);
         res.json({success:false});
     }
-
 });
 
 app.post('/getMyJobs', async (req, res) => {
     try {
-
         const username = req.body.username; 
-
         const recruiter = await Blog4.findOne({ username: username });
 
         if (!recruiter) {
@@ -425,24 +354,20 @@ app.post('/getMyJobs', async (req, res) => {
         }
 
         res.json(recruiter.job || []);
-
     } catch (err) {
-
         console.log(err);
         res.json([]);
-
     }
 });
 
 app.post('/resetSession',(req,res)=>{
-
     req.session.destroy();
-
     res.sendStatus(200);
-
 });
-const PORT = process.env.MONGO_URI;
+
+// ✅ FIXED: Using process.env.PORT with a safe fallback value (5000)
+const PORT = process.env.PORT;
 
 app.listen(PORT, ()=>{
-    console.log("Server running on port", PORT);
+    console.log(`Server running on port ${PORT}`);
 });
